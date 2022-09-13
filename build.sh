@@ -1,0 +1,1 @@
+g++ main.cpp ir/lexer.cpp ir/token.cpp ir/expressions.cpp ir/statements.cpp parser/parser.cpp visitors/compiler.cpp && ./a.out

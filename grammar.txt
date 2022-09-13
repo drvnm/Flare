@@ -1,0 +1,10 @@
+program             -> statement* EOF;
+
+statement           -> expressionStatement
+                    | printStatement;
+
+expressionStatement -> expression ";";
+expression          -> term;
+term                -> factor ( ( "-" | "+" ) factor )*;
+factor              -> primary ( ( "/" | "*" ) primary )*;
+primary             -> NUMBER | IDENTIFIER;
