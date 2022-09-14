@@ -4,16 +4,18 @@
 #include "../ir/expressions.hpp"
 #include "../ir/statements.hpp"
 
-int Compiler::visit(LiteralExpression<int> expression)
+int Compiler::visit(LiteralExpression<int> &expression)
 {
+
     return expression.value;
 }
 
-int Compiler::visit(BinaryExpression expression)
+int Compiler::visit(BinaryExpression &expression)
 {
-    int left = expression.left.accept(*this);
 
-    int right = expression.right.accept(*this);
+    int left = expression.left->accept(*this);
+
+    int right = expression.right->accept(*this);
     switch (expression.op.type)
     {
     case PLUS:
@@ -29,19 +31,19 @@ int Compiler::visit(BinaryExpression expression)
     }
 }
 
-int Compiler::visit(ExpressionStatement statement)
+int Compiler::visit(ExpressionStatement &statement)
 {
 
-    return statement.expression.accept(*this);
+    return statement.expression->accept(*this);
 }
 
-int Compiler::compile(std::vector<std::unique_ptr<Statement>>& statements) 
-{    
-  for (auto& statement : statements) 
-  {
+int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
+{
+    for (auto &statement : statements)
+    {
 
-    int result = statement->accept(*this);
-    std::cout << result << std::endl;
-  }
-  return 0;
+        int result = statement->accept(*this);
+        std::cout << result << std::endl;
+    }
+    return 0;
 }

@@ -63,18 +63,18 @@ void Parser::error(std::string message)
     exit(1);
 }
 
-Expression Parser::primary()
+std::unique_ptr<Expression> Parser::primary()
 {
     if (match({NUMBER}))
     {
 
         int value = std::stoi(previousToken().lexeme);
-        return LiteralExpression<int>(value);
+        return std::make_unique<LiteralExpression<int>>(value);
     }
-    else if (match({IDENTIFIER}))
-    {
-        return LiteralExpression<std::string>(peek().lexeme);
-    }
+    // else if (match({IDENTIFIER}))
+    // {
+    //     return LiteralExpression<std::string>(peek().lexeme);
+    // }
 
     else
     {
@@ -83,42 +83,42 @@ Expression Parser::primary()
     }
 }
 
-Expression Parser::factor()
+std::unique_ptr<Expression> Parser::factor()
 {
-    Expression expr = primary();
+    auto expr = primary();
 
     while (match({STAR, SLASH}))
     {
-        Token op = peek();
-        Expression right = primary();
-        expr = BinaryExpression(expr, op, right);
+        Token op = previousToken();
+        auto right = primary();
+        expr = std::make_unique<BinaryExpression>(expr, op, right);
     }
 
     return expr;
 }
 
-Expression Parser::term()
+std::unique_ptr<Expression> Parser::term()
 {
-    Expression expr = factor();
+    auto expr = factor();
 
     while (match({PLUS, MINUS}))
     {
-        Token op = peek();
-        Expression right = factor();
-        expr = BinaryExpression(expr, op, right);
+        Token op = previousToken();
+        auto right = factor();
+        expr = std::make_unique<BinaryExpression>(expr, op, right);
     }
 
     return expr;
 }
 
-Statement Parser::expressionStatement()
+std::unique_ptr<Statement> Parser::expressionStatement()
 {
-    Expression expr = term();
+    auto expr = term();
     consume(SEMICOLON, "Expected ';' after expression");
-    return ExpressionStatement(expr);
+    return std::make_unique<ExpressionStatement>(expr);
 }
 
-Statement Parser::statement()
+std::unique_ptr<Statement> Parser::statement()
 {
 
     return expressionStatement();
@@ -128,7 +128,6 @@ void Parser::program()
 {
     while (!atEnd())
     {
-        statements.push_back(
-            std::make_unique<Statement>(statement()));
+        statements.push_back(statement());
     }
 }

@@ -7,9 +7,9 @@
 
 class Compiler : public BaseVisitor
 {
-    int visit(LiteralExpression<int> expression) override;
-    int visit(BinaryExpression expression) override;
-    int visit(ExpressionStatement statement) override;
+    int visit(LiteralExpression<int>&expression) override;
+    int visit(BinaryExpression& expression) override;
+    int visit(ExpressionStatement& atement) override;
 
 public:
     int compile(std::vector<std::unique_ptr<Statement>>& statements);

@@ -1,12 +1,15 @@
 #pragma once
 
+#include <memory>
+
 #include "token.hpp"
 #include "../visitors/visitor.hpp"
 
 class Expression
 {
 public:
-    virtual int accept(BaseVisitor &visitor) {
+    virtual int accept(BaseVisitor &visitor)
+    {
         return 0;
     }
 };
@@ -26,10 +29,16 @@ public:
 class BinaryExpression : public Expression
 {
 public:
-    Expression left;    
-    Expression right;
+    std::unique_ptr<Expression> left;
+    std::unique_ptr<Expression> right;
     Token op;
-    BinaryExpression(Expression left, Token op, Expression right) : left(left), right(right), op(op) {}
+    BinaryExpression(
+        std::unique_ptr<Expression>& left,
+        Token op,
+        std::unique_ptr<Expression>& right)
+        : left(std::move(left)),
+          right(std::move(right)),
+          op(op) {}
 
     int accept(BaseVisitor &visitor) override;
 };

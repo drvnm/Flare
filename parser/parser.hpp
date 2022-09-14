@@ -22,12 +22,12 @@ class Parser
     bool match(std::vector<TokenTypes> types);
     void error(std::string message);
 
-    Expression primary();
-    Expression factor();
-    Expression term();
+    std::unique_ptr<Expression> primary();
+    std::unique_ptr<Expression> factor();
+    std::unique_ptr<Expression> term();
 
-    Statement expressionStatement();
-    Statement statement();
+    std::unique_ptr<Statement> expressionStatement();
+    std::unique_ptr<Statement> statement();
 
 public:
     void program();
