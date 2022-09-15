@@ -4,37 +4,44 @@
 #include "../ir/expressions.hpp"
 #include "../ir/statements.hpp"
 
-int Compiler::visit(LiteralExpression<int> &expression)
+llvm::Value *Compiler::visit(IntExpression &expression)
 {
 
-    return expression.value;
+    return llvm::ConstantInt::get(context, llvm::APInt(64, expression.value, true));
 }
 
-int Compiler::visit(BinaryExpression &expression)
+llvm::Value *Compiler::visit(BinaryExpression &expression)
 {
+    llvm::Value *left = expression.left->accept(*this);
+    llvm::Value *right = expression.right->accept(*this);
 
-    int left = expression.left->accept(*this);
-
-    int right = expression.right->accept(*this);
     switch (expression.op.type)
     {
     case PLUS:
-        return left + right;
+        return builder.CreateAdd(left, right, "addtmp");
     case MINUS:
-        return left - right;
+        return builder.CreateSub(left, right, "subtmp");
     case STAR:
-        return left * right;
+        return builder.CreateMul(left, right, "multmp");
     case SLASH:
-        return left / right;
+        return builder.CreateSDiv(left, right, "divtmp");
     default:
-        return 0;
+        return nullptr;
     }
 }
 
-int Compiler::visit(ExpressionStatement &statement)
+llvm::Value *Compiler::visit(ExpressionStatement &statement)
 {
 
     return statement.expression->accept(*this);
+}
+
+llvm::Value* Compiler::visit(PrintStatement &statement)
+{
+
+    llvm::Value *value = statement.expression->accept(*this);
+    value->print(llvm::outs());
+    return nullptr;
 }
 
 int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
@@ -42,8 +49,7 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
     for (auto &statement : statements)
     {
 
-        int result = statement->accept(*this);
-        std::cout << result << std::endl;
+        statement->accept(*this);
     }
     return 0;
 }

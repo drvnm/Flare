@@ -69,7 +69,7 @@ std::unique_ptr<Expression> Parser::primary()
     {
 
         int value = std::stoi(previousToken().lexeme);
-        return std::make_unique<LiteralExpression<int>>(value);
+        return std::make_unique<IntExpression>(value);
     }
     // else if (match({IDENTIFIER}))
     // {
@@ -79,7 +79,7 @@ std::unique_ptr<Expression> Parser::primary()
     else
     {
         error("Expected expression");
-        throw "Expected expression";
+        return nullptr;
     }
 }
 
@@ -118,10 +118,23 @@ std::unique_ptr<Statement> Parser::expressionStatement()
     return std::make_unique<ExpressionStatement>(expr);
 }
 
+std::unique_ptr<Statement> Parser::printStatement()
+{
+    auto expr = term();
+    consume(SEMICOLON, "Expected ';' after print statement");
+    return std::make_unique<PrintStatement>(expr);
+}
+
 std::unique_ptr<Statement> Parser::statement()
 {
-
-    return expressionStatement();
+    if (match({PRINT}))
+    {
+        return printStatement();
+    }
+    else
+    {
+        return expressionStatement();
+    }
 }
 
 void Parser::program()

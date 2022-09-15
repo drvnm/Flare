@@ -27,6 +27,7 @@ class Parser
     std::unique_ptr<Expression> term();
 
     std::unique_ptr<Statement> expressionStatement();
+    std::unique_ptr<Statement> printStatement();
     std::unique_ptr<Statement> statement();
 
 public:

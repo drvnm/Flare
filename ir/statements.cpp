@@ -1,6 +1,5 @@
 #include "statements.hpp"
 #include "../visitors/visitor.hpp"
 
-int ExpressionStatement::accept(BaseVisitor& visitor) {
-    return visitor.visit(*this);
-}
+ACCEPT_VISITOR_METHOD(ExpressionStatement, llvm::Value*)
+ACCEPT_VISITOR_METHOD(PrintStatement, llvm::Value*)

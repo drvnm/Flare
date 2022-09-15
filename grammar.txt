@@ -3,7 +3,11 @@ program             -> statement* EOF;
 statement           -> expressionStatement
                     | printStatement;
 
+
+
 expressionStatement -> expression ";";
+printStatement      -> "print" expression ";";
+
 expression          -> term;
 term                -> factor ( ( "-" | "+" ) factor )*;
 factor              -> primary ( ( "/" | "*" ) primary )*;

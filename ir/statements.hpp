@@ -3,14 +3,15 @@
 #include <memory>
 
 #include "expressions.hpp"
+#include "./common.hpp"
 #include "../visitors/visitor.hpp"
 
 class Statement
 {
 public:
-    virtual int accept(BaseVisitor &visitor)
+    virtual llvm::Value* accept(BaseVisitor &visitor)
     {
-        return 0;
+        return nullptr;
     }
 };
 
@@ -18,8 +19,18 @@ class ExpressionStatement : public Statement
 {
 public:
     std::unique_ptr<Expression> expression;
-    ExpressionStatement(std::unique_ptr<Expression>& expression)
+    ExpressionStatement(std::unique_ptr<Expression> &expression)
         : expression(std::move(expression)) {}
 
-    int accept(BaseVisitor &visitor) override;
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};
+
+class PrintStatement : public Statement
+{
+public:
+    std::unique_ptr<Expression> expression;
+    PrintStatement(std::unique_ptr<Expression> &expression)
+        : expression(std::move(expression)) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
 };

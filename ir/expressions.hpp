@@ -3,27 +3,26 @@
 #include <memory>
 
 #include "token.hpp"
+#include "llvm/IR/Value.h"
+
 #include "../visitors/visitor.hpp"
+#include "./common.hpp"
 
 class Expression
 {
 public:
-    virtual int accept(BaseVisitor &visitor)
+    virtual llvm::Value* accept(BaseVisitor &visitor)
     {
-        return 0;
+        return nullptr;
     }
 };
 
-template <typename T>
-class LiteralExpression : public Expression
+class IntExpression : public Expression
 {
 public:
-    T value;
-    LiteralExpression(T value) : value(value) {}
-    int accept(BaseVisitor &visitor) override
-    {
-        return visitor.visit(*this);
-    }
+    int value;
+    IntExpression(int value) : value(value) {}
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
 };
 
 class BinaryExpression : public Expression
@@ -33,12 +32,12 @@ public:
     std::unique_ptr<Expression> right;
     Token op;
     BinaryExpression(
-        std::unique_ptr<Expression>& left,
+        std::unique_ptr<Expression> &left,
         Token op,
-        std::unique_ptr<Expression>& right)
+        std::unique_ptr<Expression> &right)
         : left(std::move(left)),
           right(std::move(right)),
           op(op) {}
 
-    int accept(BaseVisitor &visitor) override;
+     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
 };

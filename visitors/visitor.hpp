@@ -1,20 +1,21 @@
 
 #pragma once
 
+#include "llvm/IR/Value.h"
 
-template <typename T>
-class LiteralExpression;
+class IntExpression;
 class BinaryExpression;
 class Statement;
 class ExpressionStatement;
+class PrintStatement;
 
 // forward declare all the expressions and statements
 
-class BaseVisitor {
+class BaseVisitor
+{
 public:
-    virtual int visit(LiteralExpression<int> &expression) = 0;
-    virtual int visit(BinaryExpression& expression) = 0;
-    virtual int visit(ExpressionStatement& statement) = 0;
+    virtual llvm::Value *visit(IntExpression &expression) = 0;
+    virtual llvm::Value *visit(BinaryExpression &expression) = 0;
+    virtual llvm::Value *visit(ExpressionStatement &statement) = 0;
+    virtual llvm::Value *visit(PrintStatement &statement) = 0;
 };
-
-
