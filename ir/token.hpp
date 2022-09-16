@@ -7,17 +7,21 @@ enum TokenTypes
     // COMPILER TYOES
     NUMBER,
 
+    I8, I16, I32, I64,
+    U8, U16, U32, U64,
+
     PLUS,
     MINUS,
     SLASH,
     STAR,
+    EQUAL,
 
     // KEYWORDS
-    PRINT,
+    PRINT, LET,
 
     IDENTIFIER,
 
-    SEMICOLON, _EOF,
+    SEMICOLON, _EOF, COLON
 };
 
 class Token

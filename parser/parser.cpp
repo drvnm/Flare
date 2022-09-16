@@ -63,6 +63,17 @@ void Parser::error(std::string message)
     exit(1);
 }
 
+Token Parser::type()
+{
+    if (match({I8, I16, I32, I64, U8, U16, U32, U64}))
+    {
+        return previousToken();
+    }
+  
+    error("Expected a type");
+    return Token(_EOF, "", -1);
+}
+
 std::unique_ptr<Expression> Parser::primary()
 {
     if (match({NUMBER}))
@@ -71,10 +82,10 @@ std::unique_ptr<Expression> Parser::primary()
         int value = std::stoi(previousToken().lexeme);
         return std::make_unique<IntExpression>(value);
     }
-    // else if (match({IDENTIFIER}))
-    // {
-    //     return LiteralExpression<std::string>(peek().lexeme);
-    // }
+    else if (match({IDENTIFIER}))
+    {
+        return std::make_unique<VarExpression>(previousToken().lexeme);
+    }
 
     else
     {
@@ -125,12 +136,29 @@ std::unique_ptr<Statement> Parser::printStatement()
     return std::make_unique<PrintStatement>(expr);
 }
 
+std::unique_ptr<Statement> Parser::letStatement()
+{
+    consume(IDENTIFIER, "Expected identifier after 'let' keyword");
+    std::string name = previousToken().lexeme;
+    consume(COLON, "Expected ';' after identifier in 'let' statement");
+    Token size = type();
+    consume(EQUAL, "Expected '=' after type in 'let' statement");
+    auto expr = term();
+    consume(SEMICOLON, "Expected ';' after expression");
+    return std::make_unique<LetStatement>(expr, name, size);
+}
+
 std::unique_ptr<Statement> Parser::statement()
 {
     if (match({PRINT}))
     {
         return printStatement();
     }
+    else if (match({LET}))
+    {
+        return letStatement();
+    }
+   
     else
     {
         return expressionStatement();

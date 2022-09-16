@@ -3,3 +3,4 @@
 
 ACCEPT_VISITOR_METHOD(ExpressionStatement, llvm::Value*)
 ACCEPT_VISITOR_METHOD(PrintStatement, llvm::Value*)
+ACCEPT_VISITOR_METHOD(LetStatement, llvm::Value*)

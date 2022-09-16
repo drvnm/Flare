@@ -34,3 +34,16 @@ public:
 
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
 };
+
+class LetStatement : public Statement
+{
+public:
+    std::unique_ptr<Expression> expression;
+    std::string name;
+    Token type;
+
+    LetStatement(std::unique_ptr<Expression> &expression, std::string name, Token type)
+        : expression(std::move(expression)), name(name), type(type) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};

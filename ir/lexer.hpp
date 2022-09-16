@@ -16,6 +16,7 @@ class Lexer
 
     void number();
     void word();
+    void tryType();
 
 public:
     std::vector<Token> tokens;

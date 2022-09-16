@@ -2,8 +2,9 @@ program             -> statement* EOF;
 
 statement           -> expressionStatement
                     | printStatement;
+                    | letStatement;
 
-
+letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
 
 expressionStatement -> expression ";";
 printStatement      -> "print" expression ";";
@@ -12,3 +13,5 @@ expression          -> term;
 term                -> factor ( ( "-" | "+" ) factor )*;
 factor              -> primary ( ( "/" | "*" ) primary )*;
 primary             -> NUMBER | IDENTIFIER;
+
+TYPE                -> i8 | i16 | i32 | i64 | u8 | u16 | u32 | u64 

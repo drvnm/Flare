@@ -25,6 +25,14 @@ public:
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
 };
 
+class VarExpression : public Expression
+{
+public:
+    std::string name;
+    VarExpression(std::string name) : name(name) {}
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
+};
+
 class BinaryExpression : public Expression
 {
 public:
