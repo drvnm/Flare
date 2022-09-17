@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
@@ -18,6 +19,7 @@ class Compiler : public BaseVisitor
     std::unique_ptr<llvm::IRBuilder<>> builder;
 
     Environment env = Environment();
+    llvm::Function *mainFunction;
 
     llvm::Value *visit(IntExpression &expression) override;
     llvm::Value *visit(BinaryExpression &expression) override;
@@ -25,6 +27,7 @@ class Compiler : public BaseVisitor
     llvm::Value *visit(ExpressionStatement &atement) override;
     llvm::Value *visit(PrintStatement &statement) override;
     llvm::Value *visit(LetStatement &statement) override;
+    llvm::Value *visit(BlockStatement &statement) override;
 
 public:
     int compile(std::vector<std::unique_ptr<Statement>> &statements);

@@ -1,5 +1,46 @@
 #include "lexer.hpp"
 #include <iostream>
+#include <map>
+
+std::map<std::string, TokenTypes> singleCharTokens = {
+    {"+", PLUS},
+    {"-", MINUS},
+    {"/", SLASH},
+    {"*", STAR},
+    {"=", EQUAL},
+    {";", SEMICOLON},
+    {":", COLON},
+    {"<", LESS},
+    {">", GREATER},
+    {"(", LBRACKET},
+    {")", RBRACKET},
+    {"{", LBRACE},
+    {"}", RBRACE},
+
+};
+
+std::map<std::string, TokenTypes> mulicharTokens = {
+    {"==", EQUAL_EQUAL},
+    {"!=", NOT_EQUAL},
+    {"<=", LESS_EQUAL},
+    {">=", GREATER_EQUAL},
+    {"<", LESS},
+    {">", GREATER},
+};
+
+std::map<std::string, TokenTypes> keywords = {
+    {"print", PRINT},
+    {"let", LET},
+    {"i8", I8},
+    {"i16", I16},
+    {"i32", I32},
+    {"i64", I64},
+    {"u8", U8},
+    {"u16", U16},
+    {"u32", U32},
+    {"u64", U64},
+};
+
 bool Lexer::atEnd()
 {
     return current >= source.length();
@@ -42,13 +83,10 @@ void Lexer::word()
         word += std::string(1, currentChar());
         advance();
     }
-    if (word == "print")
+    // if it is in keywords, push it o
+    if (keywords.find(word) != keywords.end())
     {
-        tokens.push_back(Token(PRINT, word, line));
-    }
-    else if (word == "let")
-    {
-        tokens.push_back(Token(LET, word, line));
+        tokens.push_back(Token(keywords[word], word, line));
     }
 
     else
@@ -65,37 +103,9 @@ void Lexer::tryType()
         type += std::string(1, currentChar());
         advance();
     }
-    if (type == "i8")
+    if (keywords.find(type) != keywords.end())
     {
-        tokens.push_back(Token(I8, type, line));
-    }
-    else if (type == "i16")
-    {
-        tokens.push_back(Token(I16, type, line));
-    }
-    else if (type == "i32")
-    {
-        tokens.push_back(Token(I32, type, line));
-    }
-    else if (type == "i64")
-    {
-        tokens.push_back(Token(I64, type, line));
-    }
-    else if (type == "u8")
-    {
-        tokens.push_back(Token(U8, type, line));
-    }
-    else if (type == "u16")
-    {
-        tokens.push_back(Token(U16, type, line));
-    }
-    else if (type == "u32")
-    {
-        tokens.push_back(Token(U32, type, line));
-    }
-    else if (type == "u64")
-    {
-        tokens.push_back(Token(U64, type, line));
+        tokens.push_back(Token(keywords[type], type, line));
     }
     else
     {
@@ -124,43 +134,25 @@ void Lexer::lex()
         else if (isalpha(curr))
             word();
 
-        // single char operators
-        else if (curr == '+')
+        // two char tokens
+        else if (curr == '!' || curr == '<' || curr == '>' || curr == '=') 
         {
-            tokens.push_back(Token(PLUS, std::string(1, curr), line));
+            std::string twoCharToken = std::string(1, curr);
+            advance();
+            twoCharToken += std::string(1, currentChar());
+            if (mulicharTokens.find(twoCharToken) != mulicharTokens.end())
+            {
+                tokens.push_back(Token(mulicharTokens[twoCharToken], twoCharToken, line));
+            }
+            else
+            {
+                tokens.push_back(Token(singleCharTokens[std::string(1, curr)], std::string(1, curr), line));
+            }
             advance();
         }
-        else if (curr == '-')
+        else if (singleCharTokens.find(std::string(1, curr)) != singleCharTokens.end())
         {
-            tokens.push_back(Token(MINUS, std::string(1, curr), line));
-            advance();
-        }
-        else if (curr == '*')
-        {
-            tokens.push_back(Token(STAR, std::string(1, curr), line));
-            advance();
-        }
-        else if (curr == '/')
-        {
-            tokens.push_back(Token(SLASH, std::string(1, curr), line));
-            advance();
-        }
-
-        else if (curr == ';')
-        {
-            tokens.push_back(Token(SEMICOLON, std::string(1, curr), line));
-            advance();
-        }
-
-        else if (curr == ':')
-        {
-            tokens.push_back(Token(COLON, std::string(1, curr), line));
-            advance();
-        }
-
-        else if (curr == '=')
-        {
-            tokens.push_back(Token(EQUAL, std::string(1, curr), line));
+            tokens.push_back(Token(singleCharTokens[std::string(1, curr)], std::string(1, curr), line));
             advance();
         }
 
@@ -169,8 +161,6 @@ void Lexer::lex()
             std::cout << "Unexpected character: " << curr << std::endl;
             advance();
         }
-
-       
     }
 
     tokens.push_back(Token(_EOF, "EOF", line));

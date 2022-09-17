@@ -4,6 +4,17 @@
 #include "../ir/expressions.hpp"
 #include "../ir/statements.hpp"
 
+std::map<TokenTypes, std::pair<int, bool>> typeMap = {
+    {I8, {8, true}},
+    {I16, {16, true}},
+    {I32, {32, true}},
+    {I64, {64, true}},
+    {U8, {8, false}},
+    {U16, {16, false}},
+    {U32, {32, false}},
+    {U64, {64, false}},
+};
+
 llvm::Value *Compiler::visit(IntExpression &expression)
 {
 
@@ -30,6 +41,18 @@ llvm::Value *Compiler::visit(BinaryExpression &expression)
         return builder->CreateMul(left, right, "multmp");
     case SLASH:
         return builder->CreateSDiv(left, right, "divtmp");
+    case EQUAL_EQUAL:
+        return builder->CreateICmpEQ(left, right, "eqtmp");
+    case NOT_EQUAL:
+        return builder->CreateICmpNE(left, right, "netmp");
+    case LESS:
+        return builder->CreateICmpSLT(left, right, "lttmp");
+    case LESS_EQUAL:
+        return builder->CreateICmpSLE(left, right, "letmp");
+    case GREATER:
+        return builder->CreateICmpSGT(left, right, "gttmp");
+    case GREATER_EQUAL:
+        return builder->CreateICmpSGE(left, right, "getmp");
     default:
         return nullptr;
     }
@@ -39,8 +62,6 @@ llvm::Value *Compiler::visit(ExpressionStatement &statement)
 {
 
     auto value = statement.expression->accept(*this);
-    // print IR from value 
-    value->print(llvm::outs());
     return value;
 }
 
@@ -56,64 +77,47 @@ llvm::Value *Compiler::visit(LetStatement &statement)
 {
     int bitWidth;
     bool isSigned;
-    // yeah yeah ill change this later
-    if (statement.type.type == U8)
-    {
-        bitWidth = 8;
-        isSigned = false;
-    }
-    else if (statement.type.type == U16)
-    {
-        bitWidth = 16;
-        isSigned = false;
-    }
-    else if (statement.type.type == U32)
-    {
-        bitWidth = 32;
-        isSigned = false;
-    }
-    else if (statement.type.type == U64)
-    {
-        bitWidth = 64;
-        isSigned = false;
-    }
-    else if (statement.type.type == I8)
-    {
-        bitWidth = 8;
-        isSigned = true;
-    }
-    else if (statement.type.type == I16)
-    {
-        bitWidth = 16;
-        isSigned = true;
-    }
-    else if (statement.type.type == I32)
-    {
-        bitWidth = 32;
-        isSigned = true;
-    }
-    else if (statement.type.type == I64)
-    {
-        bitWidth = 64;
-        isSigned = true;
-    }
+
+    std::tie(bitWidth, isSigned) = typeMap[statement.type];
 
     llvm::Value *value = statement.expression->accept(*this);
     llvm::Value *newValue = builder->CreateIntCast(value, llvm::Type::getIntNTy(*context, bitWidth), isSigned);
     env.define(statement.name, newValue);
-    // print IR from value 
-    newValue->print(llvm::outs());
+    // create IR
+
+
     return newValue;
+}
+
+
+llvm::Value* Compiler::visit(BlockStatement &statement) {
+    // create a new inner block with the builde
+    llvm::BasicBlock *innerBlock = llvm::BasicBlock::Create(*context, "innerBlock", mainFunction);
+    builder->SetInsertPoint(innerBlock);
+
+
+    for (auto &stmt : statement.statements) {
+        stmt->accept(*this);
+    }
+    return nullptr;
 }
 
 int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
 {
+    mainFunction = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(*context), false),
+        llvm::Function::ExternalLinkage,
+        "main",
+        module.get());
+    llvm::BasicBlock *block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
+    builder->SetInsertPoint(block);
+
+
+
     for (auto &statement : statements)
     {
         auto x = statement->accept(*this);
-     
     }
     module->print(llvm::outs(), nullptr);
     return 0;
 }
-

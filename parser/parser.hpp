@@ -7,6 +7,9 @@
 #include "../ir/expressions.hpp"
 #include "../ir/statements.hpp"
 
+#define UNIQUE_EXPRESSION std::unique_ptr<Expression>
+#define UNIQUE_STATEMENT std::unique_ptr<Statement>
+
 class Parser
 {
     std::vector<Token> tokens;
@@ -22,19 +25,23 @@ class Parser
     bool match(std::vector<TokenTypes> types);
     void error(std::string message);
 
-    Token type();
+    TokenTypes type();
 
-    std::unique_ptr<Expression> primary();
-    std::unique_ptr<Expression> factor();
-    std::unique_ptr<Expression> term();
+    UNIQUE_EXPRESSION primary();
+    UNIQUE_EXPRESSION factor();
+    UNIQUE_EXPRESSION term();
+    UNIQUE_EXPRESSION comparison();
+    UNIQUE_EXPRESSION equality();
+    UNIQUE_EXPRESSION expression();
 
-    std::unique_ptr<Statement> expressionStatement();
-    std::unique_ptr<Statement> printStatement();
-    std::unique_ptr<Statement> letStatement();
-    std::unique_ptr<Statement> statement();
+    UNIQUE_STATEMENT blockStatement();
+    UNIQUE_STATEMENT expressionStatement();
+    UNIQUE_STATEMENT printStatement();
+    UNIQUE_STATEMENT letStatement();
+    UNIQUE_STATEMENT statement();
 
 public:
     void program();
     Parser(std::vector<Token> tokens) : tokens(tokens) {}
-    std::vector<std::unique_ptr<Statement>> statements;
+    std::vector<UNIQUE_STATEMENT> statements;
 };

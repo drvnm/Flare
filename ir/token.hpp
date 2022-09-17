@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string>
 #include <iostream>
 
@@ -7,8 +8,14 @@ enum TokenTypes
     // COMPILER TYOES
     NUMBER,
 
-    I8, I16, I32, I64,
-    U8, U16, U32, U64,
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
 
     PLUS,
     MINUS,
@@ -16,13 +23,31 @@ enum TokenTypes
     STAR,
     EQUAL,
 
+    EQUAL_EQUAL,
+    NOT_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+
+    LBRACKET,
+    RBRACKET,
+    LBRACE,
+    RBRACE,
+
     // KEYWORDS
-    PRINT, LET,
+    PRINT,
+    LET,
 
     IDENTIFIER,
 
-    SEMICOLON, _EOF, COLON
+    SEMICOLON,
+    _EOF,
+    COLON
 };
+
+
+
 
 class Token
 {

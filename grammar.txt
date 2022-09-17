@@ -3,13 +3,19 @@ program             -> statement* EOF;
 statement           -> expressionStatement
                     | printStatement;
                     | letStatement;
+                    | blockStatement;
 
-letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
 
-expressionStatement -> expression ";";
+
 printStatement      -> "print" expression ";";
+letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
+expressionStatement -> expression ";";
+blockStatement      -> "{" statement* "}";
 
-expression          -> term;
+
+expression          -> equality;
+equality            -> comparison ( ( "!=" | "==" ) comparison )*;
+comparison          -> term ( ( ">" | ">=" | "<" | "<=" ) term )*;
 term                -> factor ( ( "-" | "+" ) factor )*;
 factor              -> primary ( ( "/" | "*" ) primary )*;
 primary             -> NUMBER | IDENTIFIER;

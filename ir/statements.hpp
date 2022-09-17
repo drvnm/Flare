@@ -1,10 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "expressions.hpp"
 #include "./common.hpp"
 #include "../visitors/visitor.hpp"
+#include "./token.hpp"
 
 class Statement
 {
@@ -40,10 +42,20 @@ class LetStatement : public Statement
 public:
     std::unique_ptr<Expression> expression;
     std::string name;
-    Token type;
+    TokenTypes type;
 
-    LetStatement(std::unique_ptr<Expression> &expression, std::string name, Token type)
+    LetStatement(std::unique_ptr<Expression> &expression, std::string name, TokenTypes type)
         : expression(std::move(expression)), name(name), type(type) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};
+
+class BlockStatement : public Statement
+{
+public:
+    std::vector<std::unique_ptr<Statement>> statements;
+    BlockStatement(std::vector<std::unique_ptr<Statement>> &statements)
+        : statements(std::move(statements)) {}
 
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
 };

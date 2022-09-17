@@ -63,18 +63,18 @@ void Parser::error(std::string message)
     exit(1);
 }
 
-Token Parser::type()
+TokenTypes Parser::type()
 {
     if (match({I8, I16, I32, I64, U8, U16, U32, U64}))
     {
-        return previousToken();
+        return previousToken().type;
     }
-  
+
     error("Expected a type");
-    return Token(_EOF, "", -1);
+    return Token(_EOF, "", -1).type;
 }
 
-std::unique_ptr<Expression> Parser::primary()
+UNIQUE_EXPRESSION Parser::primary()
 {
     if (match({NUMBER}))
     {
@@ -94,7 +94,7 @@ std::unique_ptr<Expression> Parser::primary()
     }
 }
 
-std::unique_ptr<Expression> Parser::factor()
+UNIQUE_EXPRESSION Parser::factor()
 {
     auto expr = primary();
 
@@ -108,7 +108,7 @@ std::unique_ptr<Expression> Parser::factor()
     return expr;
 }
 
-std::unique_ptr<Expression> Parser::term()
+UNIQUE_EXPRESSION Parser::term()
 {
     auto expr = factor();
 
@@ -122,43 +122,92 @@ std::unique_ptr<Expression> Parser::term()
     return expr;
 }
 
-std::unique_ptr<Statement> Parser::expressionStatement()
+UNIQUE_EXPRESSION Parser::comparison()
 {
     auto expr = term();
+
+    while (match({LESS, LESS_EQUAL, GREATER, GREATER_EQUAL}))
+    {
+        Token op = previousToken();
+        auto right = term();
+        expr = std::make_unique<BinaryExpression>(expr, op, right);
+    }
+
+    return expr;
+}
+
+UNIQUE_EXPRESSION Parser::equality()
+{
+    auto expr = comparison();
+
+    while (match({EQUAL_EQUAL, NOT_EQUAL}))
+    {
+        Token op = previousToken();
+        auto right = comparison();
+        expr = std::make_unique<BinaryExpression>(expr, op, right);
+    }
+
+    return expr;
+}
+
+UNIQUE_STATEMENT Parser::blockStatement()
+{
+    std::vector<UNIQUE_STATEMENT> statements;
+
+    while (!atEnd() && peek().type != RBRACE) 
+    {
+        statements.push_back(statement());
+    }
+
+    consume(RBRACE, "Expected '}' after block");
+
+    return std::make_unique<BlockStatement>(statements);
+}
+
+UNIQUE_STATEMENT Parser::expressionStatement()
+{
+    auto expr = equality();
     consume(SEMICOLON, "Expected ';' after expression");
     return std::make_unique<ExpressionStatement>(expr);
 }
 
-std::unique_ptr<Statement> Parser::printStatement()
+UNIQUE_STATEMENT Parser::printStatement()
 {
-    auto expr = term();
+    auto expr = equality();
     consume(SEMICOLON, "Expected ';' after print statement");
     return std::make_unique<PrintStatement>(expr);
 }
 
-std::unique_ptr<Statement> Parser::letStatement()
+UNIQUE_STATEMENT Parser::letStatement()
 {
     consume(IDENTIFIER, "Expected identifier after 'let' keyword");
     std::string name = previousToken().lexeme;
     consume(COLON, "Expected ';' after identifier in 'let' statement");
-    Token size = type();
+    TokenTypes size = type();
     consume(EQUAL, "Expected '=' after type in 'let' statement");
-    auto expr = term();
+    auto expr = equality();
     consume(SEMICOLON, "Expected ';' after expression");
     return std::make_unique<LetStatement>(expr, name, size);
 }
 
-std::unique_ptr<Statement> Parser::statement()
+
+
+UNIQUE_STATEMENT Parser::statement()
 {
     if (match({PRINT}))
     {
         return printStatement();
     }
+    else if (match({LBRACE}))
+    {
+        return blockStatement();
+    }
+
     else if (match({LET}))
     {
         return letStatement();
     }
-   
+
     else
     {
         return expressionStatement();

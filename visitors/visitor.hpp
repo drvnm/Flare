@@ -10,6 +10,7 @@ class Statement;
 class ExpressionStatement;
 class PrintStatement;
 class LetStatement;
+class BlockStatement;
 
 class BaseVisitor
 {
@@ -20,4 +21,5 @@ public:
     virtual llvm::Value *visit(ExpressionStatement &statement) = 0;
     virtual llvm::Value *visit(PrintStatement &statement) = 0;
     virtual llvm::Value *visit(LetStatement &statement) = 0;
+    virtual llvm::Value *visit(BlockStatement &statement) = 0;
 };
