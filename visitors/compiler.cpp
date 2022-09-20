@@ -23,7 +23,7 @@ llvm::Value *Compiler::visit(IntExpression &expression)
 
 llvm::Value *Compiler::visit(VarExpression &statement)
 {
-    return env.get(statement.name);
+    return env->get(statement.name);
 }
 
 llvm::Value *Compiler::visit(BinaryExpression &expression)
@@ -70,6 +70,7 @@ llvm::Value *Compiler::visit(PrintStatement &statement)
 
     llvm::Value *value = statement.expression->accept(*this);
     value->print(llvm::outs());
+    std::cout << std::endl;
     return nullptr;
 }
 
@@ -80,25 +81,29 @@ llvm::Value *Compiler::visit(LetStatement &statement)
 
     std::tie(bitWidth, isSigned) = typeMap[statement.type];
 
+
     llvm::Value *value = statement.expression->accept(*this);
     llvm::Value *newValue = builder->CreateIntCast(value, llvm::Type::getIntNTy(*context, bitWidth), isSigned);
-    env.define(statement.name, newValue);
-    // create IR
-
+    env->define(statement.name, newValue);
 
     return newValue;
 }
 
 
 llvm::Value* Compiler::visit(BlockStatement &statement) {
-    // create a new inner block with the builde
     llvm::BasicBlock *innerBlock = llvm::BasicBlock::Create(*context, "innerBlock", mainFunction);
     builder->SetInsertPoint(innerBlock);
 
+    // TODO: stop using new for envs
+    Environment* newEnv = new Environment(env);
+    env = newEnv;
 
     for (auto &stmt : statement.statements) {
         stmt->accept(*this);
     }
+
+    env = env->enclosing;
+
     return nullptr;
 }
 

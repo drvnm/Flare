@@ -18,7 +18,7 @@ class Compiler : public BaseVisitor
     std::unique_ptr<llvm::Module> module;
     std::unique_ptr<llvm::IRBuilder<>> builder;
 
-    Environment env = Environment();
+    Environment* env = new Environment();
     llvm::Function *mainFunction;
 
     llvm::Value *visit(IntExpression &expression) override;

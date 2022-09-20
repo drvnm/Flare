@@ -1,5 +1,11 @@
 #include "env.hpp"
 
+void Environment::error(std::string message, int line)
+{
+    std::cout << "Error: " << message << " at line " << line << std::endl;
+    exit(1);
+}
+
 void Environment::define(std::string name, llvm::Value *value)
 {
     values[name] = value;
@@ -11,7 +17,11 @@ llvm::Value *Environment::get(std::string name)
     {
         return values[name];
     }
-
+    if (enclosing != nullptr)
+    {
+        return enclosing->get(name);
+    }
+    error("Undefined variable '" + name + "'", 0);
     return nullptr;
 }
 
