@@ -69,8 +69,6 @@ llvm::Value *Compiler::visit(PrintStatement &statement)
 {
 
     llvm::Value *value = statement.expression->accept(*this);
-    value->print(llvm::outs());
-    std::cout << std::endl;
     return nullptr;
 }
 
@@ -81,7 +79,6 @@ llvm::Value *Compiler::visit(LetStatement &statement)
 
     std::tie(bitWidth, isSigned) = typeMap[statement.type];
 
-
     llvm::Value *value = statement.expression->accept(*this);
     llvm::Value *newValue = builder->CreateIntCast(value, llvm::Type::getIntNTy(*context, bitWidth), isSigned);
     env->define(statement.name, newValue);
@@ -89,20 +86,56 @@ llvm::Value *Compiler::visit(LetStatement &statement)
     return newValue;
 }
 
-
-llvm::Value* Compiler::visit(BlockStatement &statement) {
+llvm::Value *Compiler::visit(BlockStatement &statement)
+{
     llvm::BasicBlock *innerBlock = llvm::BasicBlock::Create(*context, "innerBlock", mainFunction);
     builder->SetInsertPoint(innerBlock);
 
     // TODO: stop using new for envs
-    Environment* newEnv = new Environment(env);
+    Environment *newEnv = new Environment(env);
     env = newEnv;
 
-    for (auto &stmt : statement.statements) {
+    for (auto &stmt : statement.statements)
+    {
         stmt->accept(*this);
     }
 
     env = env->enclosing;
+
+    return nullptr;
+}
+
+llvm::Value *Compiler::visit(IfStatement &statement)
+{
+    llvm::Value *condition = statement.condition->accept(*this);
+
+    llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*context, "then", mainFunction);
+    llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*context, "else");
+    llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*context, "ifcont");
+
+    builder->CreateCondBr(condition, thenBlock, elseBlock);
+
+    builder->SetInsertPoint(thenBlock);
+    statement.thenBranch->accept(*this);
+    builder->CreateBr(mergeBlock);
+
+    thenBlock = builder->GetInsertBlock();
+
+    if (statement.elseBranch)
+    {
+
+        mainFunction->getBasicBlockList().push_back(elseBlock);
+        builder->SetInsertPoint(elseBlock);
+
+        statement.elseBranch->accept(*this);
+
+        builder->CreateBr(mergeBlock);
+
+        elseBlock = builder->GetInsertBlock();
+    }
+
+    mainFunction->getBasicBlockList().push_back(mergeBlock);
+    builder->SetInsertPoint(mergeBlock);
 
     return nullptr;
 }
@@ -116,8 +149,6 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
         module.get());
     llvm::BasicBlock *block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
     builder->SetInsertPoint(block);
-
-
 
     for (auto &statement : statements)
     {

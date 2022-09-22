@@ -38,6 +38,8 @@ enum TokenTypes
     // KEYWORDS
     PRINT,
     LET,
+    IF,
+    ELSE,
 
     IDENTIFIER,
 

@@ -1,5 +1,6 @@
-#include <iostream>
 #include <string>
+#include <fstream>
+#include <iostream>
 
 #include "ir/lexer.hpp"
 #include "parser/parser.hpp"
@@ -7,9 +8,12 @@
 
 int main()
 {
-    std::string source;
-    std::cout << "> ";
-    std::getline(std::cin, source);
+    // read file main.flr
+    std::ifstream file("main.flr");
+    std::string source((std::istreambuf_iterator<char>(file)),
+                       (std::istreambuf_iterator<char>()));
+
+    std::cout << "Source: " << source << std::endl;
 
     Lexer lexer = Lexer(source);
     lexer.lex();

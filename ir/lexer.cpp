@@ -31,6 +31,8 @@ std::map<std::string, TokenTypes> mulicharTokens = {
 std::map<std::string, TokenTypes> keywords = {
     {"print", PRINT},
     {"let", LET},
+    {"if", IF},
+    {"else", ELSE},
     {"i8", I8},
     {"i16", I16},
     {"i32", I32},
@@ -121,8 +123,10 @@ void Lexer::lex()
         if (curr == ' ')
             skipWhiteSpace();
 
-        else if (curr == '\n')
+        else if (curr == '\n') {
             line += 1;
+            advance();
+        }
 
         else if (isdigit(curr))
             number();

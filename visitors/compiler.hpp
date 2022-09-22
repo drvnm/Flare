@@ -28,6 +28,7 @@ class Compiler : public BaseVisitor
     llvm::Value *visit(PrintStatement &statement) override;
     llvm::Value *visit(LetStatement &statement) override;
     llvm::Value *visit(BlockStatement &statement) override;
+    llvm::Value *visit(IfStatement &statement) override;
 
 public:
     int compile(std::vector<std::unique_ptr<Statement>> &statements);

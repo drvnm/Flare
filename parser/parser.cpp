@@ -150,11 +150,25 @@ UNIQUE_EXPRESSION Parser::equality()
     return expr;
 }
 
+UNIQUE_STATEMENT Parser::ifStatement()
+{
+    auto condition = equality();
+    auto thenBranch = statement();
+    UNIQUE_STATEMENT elseBranch = nullptr;
+
+    if (match({ELSE}))
+    {
+        elseBranch = statement();
+    }
+
+    return std::make_unique<IfStatement>(condition, thenBranch, elseBranch);
+}
+
 UNIQUE_STATEMENT Parser::blockStatement()
 {
     std::vector<UNIQUE_STATEMENT> statements;
 
-    while (!atEnd() && peek().type != RBRACE) 
+    while (!atEnd() && peek().type != RBRACE)
     {
         statements.push_back(statement());
     }
@@ -190,8 +204,6 @@ UNIQUE_STATEMENT Parser::letStatement()
     return std::make_unique<LetStatement>(expr, name, size);
 }
 
-
-
 UNIQUE_STATEMENT Parser::statement()
 {
     if (match({PRINT}))
@@ -207,8 +219,11 @@ UNIQUE_STATEMENT Parser::statement()
     {
         return letStatement();
     }
+    else if (match({IF}))
+    {
+        return ifStatement();
+    }
 
-    else
     {
         return expressionStatement();
     }

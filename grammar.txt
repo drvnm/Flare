@@ -4,6 +4,7 @@ statement           -> expressionStatement
                     | printStatement;
                     | letStatement;
                     | blockStatement;
+                    | ifStatement;
 
 
 
@@ -11,6 +12,7 @@ printStatement      -> "print" expression ";";
 letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
 expressionStatement -> expression ";";
 blockStatement      -> "{" statement* "}";
+ifStatement         -> "if" "(" expression ")" statement ("else" statement)?;
 
 
 expression          -> equality;

@@ -59,3 +59,16 @@ public:
 
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
 };
+
+class IfStatement : public Statement
+{
+public:
+    std::unique_ptr<Expression> condition;
+    std::unique_ptr<Statement> thenBranch;
+    std::unique_ptr<Statement> elseBranch;
+
+    IfStatement(std::unique_ptr<Expression> &condition, std::unique_ptr<Statement> &thenBranch, std::unique_ptr<Statement> &elseBranch)
+        : condition(std::move(condition)), thenBranch(std::move(thenBranch)), elseBranch(std::move(elseBranch)) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};
