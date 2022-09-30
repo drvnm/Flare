@@ -1,0 +1,1 @@
+./a.out && clang output.o -o out.out && ./out.out

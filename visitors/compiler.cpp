@@ -68,7 +68,13 @@ llvm::Value *Compiler::visit(ExpressionStatement &statement)
 llvm::Value *Compiler::visit(PrintStatement &statement)
 {
 
-    llvm::Value *value = statement.expression->accept(*this);
+    llvm::Function *printFunc = module->getFunction("printf");
+    std::vector<llvm::Value *> args;
+    auto value = statement.expression->accept(*this);
+    args.push_back(builder->CreateGlobalStringPtr("%d\n"));
+    args.push_back(value);
+    builder->CreateCall(printFunc, args, "printf");
+
     return nullptr;
 }
 
@@ -88,8 +94,8 @@ llvm::Value *Compiler::visit(LetStatement &statement)
 
 llvm::Value *Compiler::visit(BlockStatement &statement)
 {
-    llvm::BasicBlock *innerBlock = llvm::BasicBlock::Create(*context, "innerBlock", mainFunction);
-    builder->SetInsertPoint(innerBlock);
+    // llvm::BasicBlock *innerBlock = llvm::BasicBlock::Create(*context, "innerBlock", mainFunction);
+    // builder->SetInsertPoint(innerBlock);
 
     // TODO: stop using new for envs
     Environment *newEnv = new Environment(env);
@@ -142,6 +148,13 @@ llvm::Value *Compiler::visit(IfStatement &statement)
 
 int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
 {
+
+    // create an external function to to printf that only takes one number (long long)
+    std::vector<llvm::Type *> printfArgs;
+    printfArgs.push_back(llvm::Type::getInt8PtrTy(*context));
+    llvm::FunctionType *printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), printfArgs, true);
+    llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, llvm::Twine("printf"), module.get());
+
     mainFunction = llvm::Function::Create(
         llvm::FunctionType::get(llvm::Type::getVoidTy(*context), false),
         llvm::Function::ExternalLinkage,
@@ -154,6 +167,63 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
     {
         auto x = statement->accept(*this);
     }
+
+    // return statement
+    builder->CreateRetVoid();
+
     module->print(llvm::outs(), nullptr);
+
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+
+    auto targetTriple = llvm::sys::getDefaultTargetTriple();
+    module->setTargetTriple(targetTriple);
+
+    std::string Error;
+    auto Target = llvm::TargetRegistry::lookupTarget(targetTriple, Error);
+
+    if (!Target)
+    {
+        llvm::errs() << Error;
+        return 1;
+    }
+
+    auto CPU = "generic";
+    auto Features = "";
+
+    llvm::TargetOptions opt;
+    auto RM = llvm::Optional<llvm::Reloc::Model>();
+    auto targetMachine = Target->createTargetMachine(targetTriple, CPU, Features, opt, RM);
+
+    module->setDataLayout(targetMachine->createDataLayout());
+
+    auto fileName = "output.o";
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(fileName, EC, llvm::sys::fs::OF_None);
+
+    if (EC)
+    {
+        llvm::errs() << "Could not open file: " << EC.message();
+        return 1;
+    }
+
+    llvm::legacy::PassManager pass;
+    auto FileType = llvm::CGFT_ObjectFile;
+
+    if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType))
+    {
+        llvm::errs() << "TheTargetMachine can't emit a file of this type";
+        return 1;
+    }
+
+    pass.run(*module);
+    dest.flush();
+
+
+
+
     return 0;
 }
