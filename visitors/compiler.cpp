@@ -94,62 +94,128 @@ llvm::Value *Compiler::visit(LetStatement &statement)
 
 llvm::Value *Compiler::visit(BlockStatement &statement)
 {
-    // llvm::BasicBlock *innerBlock = llvm::BasicBlock::Create(*context, "innerBlock", mainFunction);
-    // builder->SetInsertPoint(innerBlock);
-
     // TODO: stop using new for envs
     Environment *newEnv = new Environment(env);
     env = newEnv;
-
     for (auto &stmt : statement.statements)
     {
         stmt->accept(*this);
     }
-
     env = env->enclosing;
-
     return nullptr;
 }
 
 llvm::Value *Compiler::visit(IfStatement &statement)
 {
-    llvm::Value *condition = statement.condition->accept(*this);
+    int currentIf = 0;
+    std::cout << "TEST1" << std::endl;
 
+    llvm::Value *condition = statement.condition->accept(*this);
     llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*context, "then", mainFunction);
     llvm::BasicBlock *elseBlock = llvm::BasicBlock::Create(*context, "else");
     llvm::BasicBlock *mergeBlock = llvm::BasicBlock::Create(*context, "ifcont");
+    llvm::BasicBlock *nextBlock;
 
-    builder->CreateCondBr(condition, thenBlock, elseBlock);
+    for (int i = 0; i < statement.elifBranches->size(); i++)
+    {
+        ElifStatement &elif = *(statement.elifBranches->at(i));
+        elif.block = llvm::BasicBlock::Create(*context, "elif" + std::to_string(currentIf));
+        elif.codeBlock = llvm::BasicBlock::Create(*context, "elifcont" + std::to_string(currentIf));
+        currentIf++;
+    }
+
+    if (statement.elifBranches->size())
+        nextBlock = statement.elifBranches->at(0).get()->block;
+    else if (statement.elseBranch)
+        nextBlock = elseBlock;
+    else
+        nextBlock = mergeBlock;
+
+    builder->CreateCondBr(condition, thenBlock, nextBlock);
 
     builder->SetInsertPoint(thenBlock);
     statement.thenBranch->accept(*this);
     builder->CreateBr(mergeBlock);
 
-    thenBlock = builder->GetInsertBlock();
+    for (int i = 0; i < statement.elifBranches->size(); i++)
+    {
+
+        ElifStatement &elif = *(statement.elifBranches->at(i));
+        llvm::Value *elifCondition = elif.condition->accept(*this);
+        nextBlock = i == statement.elifBranches->size() - 1 ? (statement.elseBranch ? elseBlock : mergeBlock) : statement.elifBranches->at(i + 1).get()->block;
+
+        elif.block->insertInto(mainFunction);
+        builder->SetInsertPoint(elif.block);
+        builder->CreateCondBr(elifCondition, elif.codeBlock, nextBlock);
+        elif.codeBlock->insertInto(mainFunction);
+        builder->SetInsertPoint(elif.codeBlock);
+        elif.branch->accept(*this);
+
+        builder->CreateBr(mergeBlock);
+    }
 
     if (statement.elseBranch)
     {
-
-        mainFunction->getBasicBlockList().push_back(elseBlock);
+        elseBlock->insertInto(mainFunction);
         builder->SetInsertPoint(elseBlock);
-
         statement.elseBranch->accept(*this);
-
         builder->CreateBr(mergeBlock);
-
-        elseBlock = builder->GetInsertBlock();
     }
 
-    mainFunction->getBasicBlockList().push_back(mergeBlock);
+    mergeBlock->insertInto(mainFunction);
     builder->SetInsertPoint(mergeBlock);
+
+    return nullptr;
+
+    /*
+        if (condition) {
+            thenBlock
+        } elif (cond2) {
+            elifbranch
+        }
+        } elif (cond23 {
+            elifbranch
+        }
+
+        else {
+                elseBlock
+        }
+
+        if false, jmp to elif
+        if:
+        .....
+
+        jmp to mergeBlock
+        elif:
+        if false, jmp to else
+        .....
+        jmp to mergeBlock
+        else:
+        .....
+        mergeBlock:
+
+    */
 
     return nullptr;
 }
 
-int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
+void Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
 {
 
-    // create an external function to to printf that only takes one number (long long)
+    setup(); // sets up predefined functions
+    for (auto &statement : statements)
+    {
+        auto x = statement->accept(*this);
+    }
+
+    // return statement for the main function
+    builder->CreateRetVoid();
+    module->print(llvm::outs(), nullptr);
+    createObjectFile();
+}
+
+void Compiler::setup()
+{
     std::vector<llvm::Type *> printfArgs;
     printfArgs.push_back(llvm::Type::getInt8PtrTy(*context));
     llvm::FunctionType *printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), printfArgs, true);
@@ -162,16 +228,10 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
         module.get());
     llvm::BasicBlock *block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
     builder->SetInsertPoint(block);
+}
 
-    for (auto &statement : statements)
-    {
-        auto x = statement->accept(*this);
-    }
-
-    // return statement
-    builder->CreateRetVoid();
-
-    module->print(llvm::outs(), nullptr);
+void Compiler::createObjectFile()
+{
 
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
@@ -188,7 +248,7 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
     if (!Target)
     {
         llvm::errs() << Error;
-        return 1;
+        return;
     }
 
     auto CPU = "generic";
@@ -207,7 +267,7 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
     if (EC)
     {
         llvm::errs() << "Could not open file: " << EC.message();
-        return 1;
+        return;
     }
 
     llvm::legacy::PassManager pass;
@@ -216,14 +276,9 @@ int Compiler::compile(std::vector<std::unique_ptr<Statement>> &statements)
     if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType))
     {
         llvm::errs() << "TheTargetMachine can't emit a file of this type";
-        return 1;
+        return;
     }
 
     pass.run(*module);
     dest.flush();
-
-
-
-
-    return 0;
 }

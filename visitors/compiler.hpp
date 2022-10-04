@@ -40,8 +40,11 @@ class Compiler : public BaseVisitor
     llvm::Value *visit(BlockStatement &statement) override;
     llvm::Value *visit(IfStatement &statement) override;
 
+    void setup();
+    void createObjectFile();
+
 public:
-    int compile(std::vector<std::unique_ptr<Statement>> &statements);
+    void compile(std::vector<std::unique_ptr<Statement>> &statements);
     Compiler() : context(std::make_unique<llvm::LLVMContext>()),
                  module(std::make_unique<llvm::Module>("kscope", *context)),
                  builder(std::make_unique<llvm::IRBuilder<>>(*context)) {}

@@ -1,6 +1,8 @@
-let x: u8 = 2 + 1;
-if x == 2 {
-    print x + 5;
-} else {
-    print 0;
+let x: u8 = 2 * 2 + 1;
+let y: i8 = 1;
+
+if x == 5 {
+    let y: i8 = 2;
+    print y;
 }
+print y;

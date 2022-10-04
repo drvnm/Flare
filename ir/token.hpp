@@ -39,6 +39,7 @@ enum TokenTypes
     PRINT,
     LET,
     IF,
+    ELIF,
     ELSE,
 
     IDENTIFIER,

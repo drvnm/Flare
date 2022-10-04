@@ -12,7 +12,7 @@ printStatement      -> "print" expression ";";
 letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
 expressionStatement -> expression ";";
 blockStatement      -> "{" statement* "}";
-ifStatement         -> "if" "(" expression ")" statement ("else" statement)?;
+ifStatement         -> "if" "(" expression ")" statement ("elif" expression statement)* ("else" statement)?;
 
 
 expression          -> equality;

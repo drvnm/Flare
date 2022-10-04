@@ -155,13 +155,25 @@ UNIQUE_STATEMENT Parser::ifStatement()
     auto condition = equality();
     auto thenBranch = statement();
     UNIQUE_STATEMENT elseBranch = nullptr;
+    std::unique_ptr<std::vector<std::unique_ptr<ElifStatement>>> elifBranches = std::make_unique<std::vector<std::unique_ptr<ElifStatement>>>();
+
+    while (match({ELIF}))
+    {
+        auto elifCondition = equality();
+        auto elifBranch = statement();
+        auto elifStatement = std::make_unique<ElifStatement>(elifCondition, elifBranch);
+        elifBranches->push_back(std::move(elifStatement));
+    }
 
     if (match({ELSE}))
     {
         elseBranch = statement();
     }
 
-    return std::make_unique<IfStatement>(condition, thenBranch, elseBranch);
+    return std::make_unique<IfStatement>(condition,
+                                         thenBranch,
+                                         elifBranches,
+                                         elseBranch);
 }
 
 UNIQUE_STATEMENT Parser::blockStatement()

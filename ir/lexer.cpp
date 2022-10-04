@@ -32,6 +32,7 @@ std::map<std::string, TokenTypes> keywords = {
     {"print", PRINT},
     {"let", LET},
     {"if", IF},
+    {"elif", ELIF},
     {"else", ELSE},
     {"i8", I8},
     {"i16", I16},
