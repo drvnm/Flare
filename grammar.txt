@@ -5,6 +5,7 @@ statement           -> expressionStatement
                     | letStatement;
                     | blockStatement;
                     | ifStatement;
+                    WhileStatement;
 
 
 
@@ -12,10 +13,12 @@ printStatement      -> "print" expression ";";
 letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
 expressionStatement -> expression ";";
 blockStatement      -> "{" statement* "}";
-ifStatement         -> "if" "(" expression ")" statement ("elif" expression statement)* ("else" statement)?;
+ifStatement         -> "if" expression statement ("elif" expression statement)* ("else" statement)?;
+whileStatement      -> "while" expression statement;
 
 
-expression          -> equality;
+expression          -> equality | assignment;
+assignment          -> IDENTIFIER "=" expression;
 equality            -> comparison ( ( "!=" | "==" ) comparison )*;
 comparison          -> term ( ( ">" | ">=" | "<" | "<=" ) term )*;
 term                -> factor ( ( "-" | "+" ) factor )*;

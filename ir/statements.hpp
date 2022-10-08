@@ -98,3 +98,15 @@ public:
 
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
 };
+
+class WhileStatement : public Statement
+{
+public:
+    UNIQUE_EXPRESSION condition;
+    UNIQUE_STATEMENT branch;
+
+    WhileStatement(UNIQUE_EXPRESSION &condition, UNIQUE_STATEMENT &branch)
+        : condition(std::move(condition)), branch(std::move(branch)) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};

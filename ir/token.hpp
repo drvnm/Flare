@@ -41,6 +41,7 @@ enum TokenTypes
     IF,
     ELIF,
     ELSE,
+    WHILE,
 
     IDENTIFIER,
 

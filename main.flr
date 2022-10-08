@@ -1,8 +1,10 @@
-let x: u8 = 2 * 2 + 1;
-let y: i8 = 1;
+let x: i64 = 1;
 
-if x == 5 {
-    let y: i8 = 2;
-    print y;
+while x < 100 {
+    let y: i64 = 0;
+    while y < 10 {
+        y = y + 1;
+        print y;
+    }
+    x = x+1;
 }
-print y;

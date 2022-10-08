@@ -32,4 +32,10 @@ void Environment::assign(std::string name, llvm::Value *value)
         values[name] = value;
         return;
     }
+    if (enclosing != nullptr)
+    {
+        enclosing->assign(name, value);
+        return;
+    }
+    error("Undefined variable '" + name + "'", 0);
 }

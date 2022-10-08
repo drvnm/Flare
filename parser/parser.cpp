@@ -98,6 +98,8 @@ UNIQUE_EXPRESSION Parser::factor()
 {
     auto expr = primary();
 
+    
+
     while (match({STAR, SLASH}))
     {
         Token op = previousToken();
@@ -150,16 +152,35 @@ UNIQUE_EXPRESSION Parser::equality()
     return expr;
 }
 
+UNIQUE_EXPRESSION Parser::assignment()
+{
+    auto expr = equality();
+
+    if (match({EQUAL}))
+    {
+        auto val = expression();
+        VarExpression *var = dynamic_cast<VarExpression *>(expr.get());
+        expr = std::make_unique<AssignmentExpression>(var->name, val);
+    }
+
+    return expr;
+}
+
+UNIQUE_EXPRESSION Parser::expression()
+{
+    return assignment();
+}
+
 UNIQUE_STATEMENT Parser::ifStatement()
 {
-    auto condition = equality();
+    auto condition = expression();
     auto thenBranch = statement();
     UNIQUE_STATEMENT elseBranch = nullptr;
     std::unique_ptr<std::vector<std::unique_ptr<ElifStatement>>> elifBranches = std::make_unique<std::vector<std::unique_ptr<ElifStatement>>>();
 
     while (match({ELIF}))
     {
-        auto elifCondition = equality();
+        auto elifCondition = expression();
         auto elifBranch = statement();
         auto elifStatement = std::make_unique<ElifStatement>(elifCondition, elifBranch);
         elifBranches->push_back(std::move(elifStatement));
@@ -192,14 +213,14 @@ UNIQUE_STATEMENT Parser::blockStatement()
 
 UNIQUE_STATEMENT Parser::expressionStatement()
 {
-    auto expr = equality();
+    auto expr = expression();
     consume(SEMICOLON, "Expected ';' after expression");
     return std::make_unique<ExpressionStatement>(expr);
 }
 
 UNIQUE_STATEMENT Parser::printStatement()
 {
-    auto expr = equality();
+    auto expr = expression();
     consume(SEMICOLON, "Expected ';' after print statement");
     return std::make_unique<PrintStatement>(expr);
 }
@@ -211,9 +232,16 @@ UNIQUE_STATEMENT Parser::letStatement()
     consume(COLON, "Expected ';' after identifier in 'let' statement");
     TokenTypes size = type();
     consume(EQUAL, "Expected '=' after type in 'let' statement");
-    auto expr = equality();
+    auto expr = expression();
     consume(SEMICOLON, "Expected ';' after expression");
     return std::make_unique<LetStatement>(expr, name, size);
+}
+
+UNIQUE_STATEMENT Parser::whileStatement()
+{
+    auto condition = expression();
+    auto body = statement();
+    return std::make_unique<WhileStatement>(condition, body);
 }
 
 UNIQUE_STATEMENT Parser::statement()
@@ -234,6 +262,10 @@ UNIQUE_STATEMENT Parser::statement()
     else if (match({IF}))
     {
         return ifStatement();
+    }
+    else if (match({WHILE}))
+    {
+        return whileStatement();
     }
 
     {

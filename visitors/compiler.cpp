@@ -15,15 +15,38 @@ std::map<TokenTypes, std::pair<int, bool>> typeMap = {
     {U64, {64, false}},
 };
 
+// CASTS [val1] TO [val2] 
+llvm::Value *Compiler::CastValueToVarType(llvm::Value *val1, llvm::Value* val2)
+{
+    auto type1 = val1->getType();
+    auto type2 = val2->getType();
+
+    if (type1 == type2)
+        return val1;
+
+    if (type1->isIntegerTy() && type2->isIntegerTy())
+    {
+        auto type1Size = type1->getIntegerBitWidth();
+        auto type2Size = type2->getIntegerBitWidth();
+
+        if (type1Size > type2Size)
+            return builder->CreateIntCast(val1, type2, true);
+        else
+            return builder->CreateIntCast(val1, type2, false);
+    }
+
+    return val1;
+}
+
 llvm::Value *Compiler::visit(IntExpression &expression)
 {
-
     return llvm::ConstantInt::get(*context, llvm::APInt(64, expression.value, true));
 }
 
 llvm::Value *Compiler::visit(VarExpression &statement)
 {
-    return env->get(statement.name);
+    auto var = env->get(statement.name);
+    return builder->CreateLoad(var);
 }
 
 llvm::Value *Compiler::visit(BinaryExpression &expression)
@@ -31,6 +54,9 @@ llvm::Value *Compiler::visit(BinaryExpression &expression)
     llvm::Value *left = expression.left->accept(*this);
     llvm::Value *right = expression.right->accept(*this);
 
+    left = CastValueToVarType(left, right);
+    right = CastValueToVarType(right, left);
+    
     switch (expression.op.type)
     {
     case PLUS:
@@ -56,6 +82,14 @@ llvm::Value *Compiler::visit(BinaryExpression &expression)
     default:
         return nullptr;
     }
+}
+
+llvm::Value *Compiler::visit(AssignmentExpression &statement)
+{
+    auto *value = statement.value->accept(*this);
+    auto var = env->get(statement.name);
+    value = CastValueToVarType(value, var);
+    return builder->CreateStore(value, var);
 }
 
 llvm::Value *Compiler::visit(ExpressionStatement &statement)
@@ -87,8 +121,9 @@ llvm::Value *Compiler::visit(LetStatement &statement)
 
     llvm::Value *value = statement.expression->accept(*this);
     llvm::Value *newValue = builder->CreateIntCast(value, llvm::Type::getIntNTy(*context, bitWidth), isSigned);
-    env->define(statement.name, newValue);
-
+    llvm::AllocaInst *alloca = builder->CreateAlloca(llvm::Type::getIntNTy(*context, bitWidth), 0, statement.name);
+    builder->CreateStore(newValue, alloca);
+    env->define(statement.name, alloca);
     return newValue;
 }
 
@@ -108,7 +143,6 @@ llvm::Value *Compiler::visit(BlockStatement &statement)
 llvm::Value *Compiler::visit(IfStatement &statement)
 {
     int currentIf = 0;
-    std::cout << "TEST1" << std::endl;
 
     llvm::Value *condition = statement.condition->accept(*this);
     llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(*context, "then", mainFunction);
@@ -119,8 +153,8 @@ llvm::Value *Compiler::visit(IfStatement &statement)
     for (int i = 0; i < statement.elifBranches->size(); i++)
     {
         ElifStatement &elif = *(statement.elifBranches->at(i));
-        elif.block = llvm::BasicBlock::Create(*context, "elif" + std::to_string(currentIf));
-        elif.codeBlock = llvm::BasicBlock::Create(*context, "elifcont" + std::to_string(currentIf));
+        elif.block = llvm::BasicBlock::Create(*context, "elif");
+        elif.codeBlock = llvm::BasicBlock::Create(*context, "elifcont");
         currentIf++;
     }
 
@@ -166,35 +200,27 @@ llvm::Value *Compiler::visit(IfStatement &statement)
     builder->SetInsertPoint(mergeBlock);
 
     return nullptr;
+}
 
-    /*
-        if (condition) {
-            thenBlock
-        } elif (cond2) {
-            elifbranch
-        }
-        } elif (cond23 {
-            elifbranch
-        }
+llvm::Value *Compiler::visit(WhileStatement &statement)
+{
+    llvm::BasicBlock *loopBlock = llvm::BasicBlock::Create(*context, "loop", mainFunction);
+    llvm::BasicBlock *loopBody = llvm::BasicBlock::Create(*context, "loopBody");
+    llvm::BasicBlock *afterBlock = llvm::BasicBlock::Create(*context, "afterloop");
 
-        else {
-                elseBlock
-        }
+    builder->CreateBr(loopBlock);
+    builder->SetInsertPoint(loopBlock);
 
-        if false, jmp to elif
-        if:
-        .....
+    llvm::Value *condition = statement.condition->accept(*this);
+    builder->CreateCondBr(condition, loopBody, afterBlock);
 
-        jmp to mergeBlock
-        elif:
-        if false, jmp to else
-        .....
-        jmp to mergeBlock
-        else:
-        .....
-        mergeBlock:
+    loopBody->insertInto(mainFunction);
+    builder->SetInsertPoint(loopBody);
+    statement.branch->accept(*this);
+    builder->CreateBr(loopBlock);
 
-    */
+    afterBlock->insertInto(mainFunction);
+    builder->SetInsertPoint(afterBlock);
 
     return nullptr;
 }

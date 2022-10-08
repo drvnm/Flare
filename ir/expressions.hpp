@@ -36,16 +36,27 @@ public:
 class BinaryExpression : public Expression
 {
 public:
-    std::unique_ptr<Expression> left;
-    std::unique_ptr<Expression> right;
+    UNIQUE_EXPRESSION left;
+    UNIQUE_EXPRESSION right;
     Token op;
     BinaryExpression(
-        std::unique_ptr<Expression> &left,
+        UNIQUE_EXPRESSION &left,
         Token op,
-        std::unique_ptr<Expression> &right)
+        UNIQUE_EXPRESSION &right)
         : left(std::move(left)),
           right(std::move(right)),
           op(op) {}
 
      ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
 };
+
+class AssignmentExpression : public Expression
+{
+    public:
+    UNIQUE_EXPRESSION value;
+    std::string name;
+    AssignmentExpression(std::string name, UNIQUE_EXPRESSION &value)
+        : value(std::move(value)), name(name) {}
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
+};
+

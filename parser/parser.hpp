@@ -32,12 +32,15 @@ class Parser
     UNIQUE_EXPRESSION term();
     UNIQUE_EXPRESSION comparison();
     UNIQUE_EXPRESSION equality();
+    UNIQUE_EXPRESSION assignment();
+    UNIQUE_EXPRESSION expression();
 
-    UNIQUE_STATEMENT ifStatement();
+    UNIQUE_STATEMENT letStatement();
     UNIQUE_STATEMENT blockStatement();
     UNIQUE_STATEMENT expressionStatement();
     UNIQUE_STATEMENT printStatement();
-    UNIQUE_STATEMENT letStatement();
+    UNIQUE_STATEMENT ifStatement();
+    UNIQUE_STATEMENT whileStatement();
     UNIQUE_STATEMENT statement();
 
 public:
