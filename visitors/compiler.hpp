@@ -31,16 +31,19 @@ class Compiler : public BaseVisitor
     Environment* env = new Environment();
     llvm::Function *mainFunction;
 
-    llvm::Value *CastValueToVarType(llvm::Value *val1, llvm::Value* val2);
+    void CastValuesToBiggestType(llvm::Value *&left, llvm::Value *&right);
     llvm::Value *visit(IntExpression &expression) override;
     llvm::Value *visit(BinaryExpression &expression) override;
     llvm::Value *visit(VarExpression &statement) override;
     llvm::Value *visit(AssignmentExpression &statement) override;
+    llvm::Value *visit(CallExpression &statement) override;
     llvm::Value *visit(ExpressionStatement &atement) override;
     llvm::Value *visit(PrintStatement &statement) override;
     llvm::Value *visit(LetStatement &statement) override;
     llvm::Value *visit(BlockStatement &statement) override;
     llvm::Value *visit(IfStatement &statement) override;
+    llvm::Value *visit(FnStatement &statement) override;
+    llvm::Value *visit(ReturnStatement &statement) override;
     llvm::Value *visit(WhileStatement &statement) override;
 
     void setup();

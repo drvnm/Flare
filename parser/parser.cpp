@@ -94,16 +94,39 @@ UNIQUE_EXPRESSION Parser::primary()
     }
 }
 
-UNIQUE_EXPRESSION Parser::factor()
+UNIQUE_EXPRESSION Parser::call()
 {
     auto expr = primary();
+    if (match({LBRACKET}))
+    {
+        std::vector<UNIQUE_EXPRESSION> args;
+        if (!match({RBRACKET}))
+        {
+            do
+            {
+                args.push_back(expression());
+            } while (match({COMMA}));
+            consume(RBRACKET, "Expected ')' after arguments");
+        }
+        VarExpression *var = dynamic_cast<VarExpression *>(expr.get());
+        return std::make_unique<CallExpression>(var->name, args);
+    }
+    return expr;
+}
 
-    
+UNIQUE_EXPRESSION Parser::unary()
+{
+    return call();
+}
+
+UNIQUE_EXPRESSION Parser::factor()
+{
+    auto expr = unary();
 
     while (match({STAR, SLASH}))
     {
         Token op = previousToken();
-        auto right = primary();
+        auto right = unary();
         expr = std::make_unique<BinaryExpression>(expr, op, right);
     }
 
@@ -197,6 +220,47 @@ UNIQUE_STATEMENT Parser::ifStatement()
                                          elseBranch);
 }
 
+std::vector<Argument> Parser::arguments()
+{
+    std::vector<Argument> args = {};
+
+    if (match({RBRACKET}))
+        return args;
+    do
+    {
+        Token argName = consume(IDENTIFIER, "Expected argument name");
+        consume(COLON, "Expected ':' after argument name");
+        TokenTypes argType = type();
+        args.push_back(Argument(argName.lexeme, argType));
+    } while (match({COMMA}));
+
+    consume(RBRACKET, "Expected ')' after arguments");
+    return args;
+}
+
+UNIQUE_STATEMENT Parser::functionStatement()
+{
+    if (!match({IDENTIFIER}))
+    {
+        error("Expected function name");
+    }
+    std::string name = previousToken().lexeme;
+    consume(LBRACKET, "Expected '(' after function name");
+    auto args = arguments();
+    consume(COLON, "Expected ':' after function (missing return type)");
+    TokenTypes returnType = type();
+    consume(LBRACE, "Expected '{' after function arguments");
+    auto body = blockStatement();
+    return std::make_unique<FnStatement>(name, args, returnType, body);
+}
+
+UNIQUE_STATEMENT Parser::returnStatement()
+{
+    auto value = expression();
+    consume(SEMICOLON, "Expected ';' after return value");
+    return std::make_unique<ReturnStatement>(value);
+}
+
 UNIQUE_STATEMENT Parser::blockStatement()
 {
     std::vector<UNIQUE_STATEMENT> statements;
@@ -266,6 +330,14 @@ UNIQUE_STATEMENT Parser::statement()
     else if (match({WHILE}))
     {
         return whileStatement();
+    }
+    else if (match({FN}))
+    {
+        return functionStatement();
+    }
+    else if (match({RETURN}))
+    {
+        return returnStatement();
     }
 
     {

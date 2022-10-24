@@ -110,3 +110,40 @@ public:
 
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
 };
+
+class Argument {
+public:
+    std::string name;
+    TokenTypes type;
+    Argument(std::string name, TokenTypes type) : name(name), type(type) {}
+};
+
+
+class FnStatement : public Statement
+{
+public:
+    std::string name;
+    std::vector<Argument> args;
+    TokenTypes returnType;
+    UNIQUE_STATEMENT body;
+
+    FnStatement(std::string name,
+                std::vector<Argument> &args,
+                TokenTypes returnType,
+                UNIQUE_STATEMENT &body)
+        : name(name), args(args), returnType(returnType), body(std::move(body)) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};
+
+class ReturnStatement : public Statement
+{
+public:
+    UNIQUE_EXPRESSION expression;
+    ReturnStatement(UNIQUE_EXPRESSION &expression)
+        : expression(std::move(expression)) {}
+
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value *)
+};
+
+

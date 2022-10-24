@@ -15,27 +15,28 @@ std::map<TokenTypes, std::pair<int, bool>> typeMap = {
     {U64, {64, false}},
 };
 
-// CASTS [val1] TO [val2] 
-llvm::Value *Compiler::CastValueToVarType(llvm::Value *val1, llvm::Value* val2)
+// cast values to biggest type
+void Compiler::CastValuesToBiggestType(llvm::Value *&left, llvm::Value *&right)
 {
-    auto type1 = val1->getType();
-    auto type2 = val2->getType();
+    auto leftType = left->getType();
+    auto rightType = right->getType();
 
-    if (type1 == type2)
-        return val1;
-
-    if (type1->isIntegerTy() && type2->isIntegerTy())
+    if (leftType == rightType)
     {
-        auto type1Size = type1->getIntegerBitWidth();
-        auto type2Size = type2->getIntegerBitWidth();
-
-        if (type1Size > type2Size)
-            return builder->CreateIntCast(val1, type2, true);
-        else
-            return builder->CreateIntCast(val1, type2, false);
+        return;
     }
 
-    return val1;
+    auto leftSize = leftType->getIntegerBitWidth();
+    auto rightSize = rightType->getIntegerBitWidth();
+
+    if (leftSize > rightSize)
+    {
+        right = builder->CreateIntCast(right, leftType, true);
+    }
+    else
+    {
+        left = builder->CreateIntCast(left, rightType, true);
+    }
 }
 
 llvm::Value *Compiler::visit(IntExpression &expression)
@@ -54,9 +55,8 @@ llvm::Value *Compiler::visit(BinaryExpression &expression)
     llvm::Value *left = expression.left->accept(*this);
     llvm::Value *right = expression.right->accept(*this);
 
-    left = CastValueToVarType(left, right);
-    right = CastValueToVarType(right, left);
-    
+    CastValuesToBiggestType(left, right);
+
     switch (expression.op.type)
     {
     case PLUS:
@@ -88,9 +88,22 @@ llvm::Value *Compiler::visit(AssignmentExpression &statement)
 {
     auto *value = statement.value->accept(*this);
     auto var = env->get(statement.name);
-    value = CastValueToVarType(value, var);
+    bool isSigned = var->getType()->getPointerElementType()->isIntegerTy();
+    value = builder->CreateIntCast(value, var->getType()->getPointerElementType(), isSigned);
     return builder->CreateStore(value, var);
 }
+
+llvm::Value *Compiler::visit(CallExpression &expression)
+{
+    auto func = module->getFunction(expression.name);
+    std::vector<llvm::Value *> args;
+    for (auto &arg : expression.args)
+    {
+        args.push_back(arg->accept(*this));
+    }
+    return builder->CreateCall(func, args, "calltmp");
+}
+
 
 llvm::Value *Compiler::visit(ExpressionStatement &statement)
 {
@@ -174,12 +187,12 @@ llvm::Value *Compiler::visit(IfStatement &statement)
     for (int i = 0; i < statement.elifBranches->size(); i++)
     {
 
-        ElifStatement &elif = *(statement.elifBranches->at(i));
-        llvm::Value *elifCondition = elif.condition->accept(*this);
         nextBlock = i == statement.elifBranches->size() - 1 ? (statement.elseBranch ? elseBlock : mergeBlock) : statement.elifBranches->at(i + 1).get()->block;
+        ElifStatement &elif = *(statement.elifBranches->at(i));
 
         elif.block->insertInto(mainFunction);
         builder->SetInsertPoint(elif.block);
+        llvm::Value *elifCondition = elif.condition->accept(*this);
         builder->CreateCondBr(elifCondition, elif.codeBlock, nextBlock);
         elif.codeBlock->insertInto(mainFunction);
         builder->SetInsertPoint(elif.codeBlock);
@@ -199,6 +212,56 @@ llvm::Value *Compiler::visit(IfStatement &statement)
     mergeBlock->insertInto(mainFunction);
     builder->SetInsertPoint(mergeBlock);
 
+    return nullptr;
+}
+
+llvm::Value *Compiler::visit(FnStatement &statement)
+{
+    std::vector<llvm::Type *> argTypes;
+    for (auto &arg : statement.args)
+    {
+        int bitWidth;
+        bool isSigned;
+        std::tie(bitWidth, isSigned) = typeMap[arg.type];
+        argTypes.push_back(llvm::Type::getIntNTy(*context, bitWidth));
+    }
+    // todo:: refactor this
+    int bitWidth;
+    bool isSigned;
+    std::tie(bitWidth, isSigned) = typeMap[statement.returnType];
+    llvm::Type *returnType = llvm::Type::getIntNTy(*context, bitWidth);
+
+    llvm::FunctionType *funcType = llvm::FunctionType::get(returnType, argTypes, false);
+    mainFunction = llvm::Function::Create(funcType, llvm::Function::ExternalLinkage, statement.name, module.get());
+    env->define(statement.name, mainFunction);
+    llvm::BasicBlock *block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
+    builder->SetInsertPoint(block);
+
+    Environment *newEnv = new Environment(env);
+    env = newEnv;
+
+    int i = 0;
+    for (auto &arg : mainFunction->args())
+    {
+        arg.setName(statement.args[i].name);
+        llvm::AllocaInst *alloca = builder->CreateAlloca(arg.getType(), 0, arg.getName());
+        builder->CreateStore(&arg, alloca);
+        env->define(arg.getName(), alloca);
+        i++;
+    }
+
+    statement.body->accept(*this);
+
+    env = env->enclosing;
+
+    return mainFunction;
+
+}
+
+llvm::Value *Compiler::visit(ReturnStatement &statement)
+{
+    llvm::Value *value = statement.expression->accept(*this);
+    builder->CreateRet(value);
     return nullptr;
 }
 
@@ -247,12 +310,7 @@ void Compiler::setup()
     llvm::FunctionType *printfType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*context), printfArgs, true);
     llvm::Function::Create(printfType, llvm::Function::ExternalLinkage, llvm::Twine("printf"), module.get());
 
-    mainFunction = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(*context), false),
-        llvm::Function::ExternalLinkage,
-        "main",
-        module.get());
-    llvm::BasicBlock *block = llvm::BasicBlock::Create(*context, "entry", mainFunction);
+    llvm::BasicBlock *block = llvm::BasicBlock::Create(*context, "entry");
     builder->SetInsertPoint(block);
 }
 

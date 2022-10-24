@@ -3,6 +3,8 @@ program             -> statement* EOF;
 statement           -> expressionStatement
                     | printStatement;
                     | letStatement;
+                    | fnStatement;
+                    | returnStatement;
                     | blockStatement;
                     | ifStatement;
                     WhileStatement;
@@ -11,18 +13,24 @@ statement           -> expressionStatement
 
 printStatement      -> "print" expression ";";
 letStatement        -> "let" ":" TYPE IDENTIFIER "=" expression ";";
+fnStatement         -> "fn" IDENTIFIER "(" parameters? ")" ":" TYPE blockStatement;
+returnStatement     -> "return" expression ";";
 expressionStatement -> expression ";";
 blockStatement      -> "{" statement* "}";
 ifStatement         -> "if" expression statement ("elif" expression statement)* ("else" statement)?;
 whileStatement      -> "while" expression statement;
 
+parameters          -> IDENTIFIER ":" TYPE ("," IDENTIFIER ":" TYPE)*;
 
 expression          -> equality | assignment;
 assignment          -> IDENTIFIER "=" expression;
 equality            -> comparison ( ( "!=" | "==" ) comparison )*;
 comparison          -> term ( ( ">" | ">=" | "<" | "<=" ) term )*;
 term                -> factor ( ( "-" | "+" ) factor )*;
-factor              -> primary ( ( "/" | "*" ) primary )*;
+factor              -> primary ( ( "/" | "*" ) unary )*;
+unary               -> call | primary;
+call                -> primary "(" arguments? ")";
+arguments           -> expression ("," expression)*;
 primary             -> NUMBER | IDENTIFIER;
 
 TYPE                -> i8 | i16 | i32 | i64 | u8 | u16 | u32 | u64 

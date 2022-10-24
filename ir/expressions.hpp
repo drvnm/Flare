@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-
+#include <vector>
 #include "token.hpp"
 #include "llvm/IR/Value.h"
 
@@ -60,3 +60,12 @@ class AssignmentExpression : public Expression
     ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
 };
 
+class CallExpression : public Expression
+{
+public:
+    std::string name;
+    std::vector<UNIQUE_EXPRESSION> args;
+    CallExpression(std::string name, std::vector<UNIQUE_EXPRESSION>& args)
+        : name(name), args(std::move(args)) {}
+    ACCEPT_VISITOR_METHOD_HEADER(llvm::Value*)
+};

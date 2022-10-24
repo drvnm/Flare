@@ -28,6 +28,8 @@ class Parser
     TokenTypes type();
 
     UNIQUE_EXPRESSION primary();
+    UNIQUE_EXPRESSION call();
+    UNIQUE_EXPRESSION unary();
     UNIQUE_EXPRESSION factor();
     UNIQUE_EXPRESSION term();
     UNIQUE_EXPRESSION comparison();
@@ -40,6 +42,9 @@ class Parser
     UNIQUE_STATEMENT expressionStatement();
     UNIQUE_STATEMENT printStatement();
     UNIQUE_STATEMENT ifStatement();
+    std::vector<Argument> arguments();
+    UNIQUE_STATEMENT functionStatement();
+    UNIQUE_STATEMENT returnStatement();
     UNIQUE_STATEMENT whileStatement();
     UNIQUE_STATEMENT statement();
 

@@ -42,10 +42,13 @@ enum TokenTypes
     ELIF,
     ELSE,
     WHILE,
+    FN,
+    RETURN,
 
     IDENTIFIER,
 
     SEMICOLON,
+    COMMA,
     _EOF,
     COLON
 };
