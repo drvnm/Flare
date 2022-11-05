@@ -3,3 +3,5 @@
 
 # Flare
 A programming language written in c++. It is a work in progress, and not usable yet.
+
+See main.flr for examples.
